@@ -370,5 +370,66 @@ public class ConveyorController {
 
         return faults;
     }
-    
+    public boolean canTurnOffAll() {
+        String sql = "SELECT COUNT(*) FROM Conveyor WHERE state = 'ROUTING'";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            if (rs.next()) {
+                return rs.getInt(1) == 0;
+            }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return false;
+    }
+    public boolean turnOffAllConveyors() {
+        String sql = "UPDATE Conveyor SET state = 'OFF', previousState = state";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+    public boolean turnOnAllConveyors() {
+        String sql = "UPDATE Conveyor SET state = 'INTEGRITY_CHECK', " +
+                "electronicCheckStatus = 'SENSORS_CHECK', " +
+                "mechanicalCheckStatus = 'BELT_CHECK', " +
+                "checkTimerText = '00:30' " +
+                "WHERE weightChangePending = false";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return false;
+        }
+        
+    }
+    public boolean confirmWeightChange(int conveyorId) {
+        String sql = "UPDATE Conveyor SET weightChangePending = false, state = 'OFF' WHERE conveyorId = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, conveyorId);
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
 }

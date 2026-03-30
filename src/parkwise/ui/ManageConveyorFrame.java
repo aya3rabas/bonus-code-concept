@@ -25,6 +25,7 @@ public class ManageConveyorFrame extends JFrame {
 
     private final RoundedTextField searchLotField = new RoundedTextField();
 
+    
     private final RoundedButton previousButton;
     private final RoundedButton nextButton;
     private final RoundedButton addNewButton;

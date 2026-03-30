@@ -1,0 +1,24 @@
+{
+  "year": 2026,
+  "source": "IRS",
+  "priceLists": [
+    {
+      "priceListId": 1,
+      "firstHourPrice": 10.0,
+      "additionalHourPrice": 5.0,
+      "fullDayPrice": 50.0
+    },
+    {
+      "priceListId": 2,
+      "firstHourPrice": 12.0,
+      "additionalHourPrice": 6.0,
+      "fullDayPrice": 60.0
+    },
+    {
+      "priceListId": 3,
+      "firstHourPrice": 15.0,
+      "additionalHourPrice": 7.0,
+      "fullDayPrice": 70.0
+    }
+  ]
+}

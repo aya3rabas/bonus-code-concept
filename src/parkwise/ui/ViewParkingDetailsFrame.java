@@ -1,7 +1,6 @@
 package parkwise.ui;
 
 import parkwise.controller.ParkingSessionController;
-import parkwise.controller.PaymentController;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,17 +9,17 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.RoundRectangle2D;
 import java.sql.Timestamp;
-import parkwise.ui.StyledMessageDialog;
-public class EndParkingFrame extends JFrame {
 
-    public EndParkingFrame() {
-        setTitle("ParkWise - End Parking");
+public class ViewParkingDetailsFrame extends JFrame {
+
+    public ViewParkingDetailsFrame() {
+        setTitle("ParkWise - View Parking Details");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
-        setContentPane(new EndParkingPanel());
+        setContentPane(new ViewParkingDetailsPanel());
     }
 
-    static class EndParkingPanel extends JPanel {
+    static class ViewParkingDetailsPanel extends JPanel {
 
         private final Color OFF_WHITE = new Color(249, 248, 244);
         private final Color MATCHA_1 = new Color(123, 171, 106);
@@ -34,9 +33,8 @@ public class EndParkingFrame extends JFrame {
         private final JLabel messageLabel = new JLabel(" ", SwingConstants.CENTER);
 
         private final ParkingSessionController sessionController = new ParkingSessionController();
-        private final PaymentController paymentController = new PaymentController();
 
-        EndParkingPanel() {
+        ViewParkingDetailsPanel() {
             setBackground(OFF_WHITE);
             setLayout(new GridBagLayout());
 
@@ -86,30 +84,30 @@ public class EndParkingFrame extends JFrame {
             messageLabel.setForeground(new Color(180, 60, 60));
             formPanel.add(messageLabel, gbc);
 
-            RoundedButton cancelBtn = new RoundedButton("Close", MATCHA_2, false);
-            RoundedButton endBtn = new RoundedButton("End Parking", MATCHA_2, true);
+            RoundedButton closeBtn = new RoundedButton("Close", MATCHA_2, false);
+            RoundedButton viewBtn = new RoundedButton("View Details", MATCHA_2, true);
 
-            cancelBtn.addActionListener(e -> SwingUtilities.getWindowAncestor(this).dispose());
-            endBtn.addActionListener(e -> handleEndParking());
+            closeBtn.addActionListener(e -> SwingUtilities.getWindowAncestor(this).dispose());
+            viewBtn.addActionListener(e -> handleViewDetails());
 
             vehicleNumberField.addActionListener(e -> phoneField.requestFocusInWindow());
-            phoneField.addActionListener(e -> handleEndParking());
+            phoneField.addActionListener(e -> handleViewDetails());
 
             JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
             actions.setOpaque(false);
             actions.setBorder(BorderFactory.createEmptyBorder(8, 22, 20, 22));
-            actions.add(cancelBtn);
-            actions.add(endBtn);
+            actions.add(closeBtn);
+            actions.add(viewBtn);
 
             JPanel header = new JPanel(new BorderLayout());
             header.setOpaque(false);
             header.setBorder(BorderFactory.createEmptyBorder(10, 22, 10, 22));
 
-            JLabel title = new JLabel("End Parking");
+            JLabel title = new JLabel("View Parking Details");
             title.setFont(new Font("Segoe UI", Font.BOLD, 26));
             title.setForeground(TEXT_DARK);
 
-            JLabel subtitle = new JLabel("Enter vehicle details to finish the parking session");
+            JLabel subtitle = new JLabel("Enter vehicle number and phone to view the active parking session");
             subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 14));
             subtitle.setForeground(TEXT_MUTED);
 
@@ -120,13 +118,13 @@ public class EndParkingFrame extends JFrame {
             titles.add(Box.createVerticalStrut(6));
             titles.add(subtitle);
 
-            JComponent icon = new IconBubble("🧾", MATCHA_1);
+            JComponent icon = new IconBubble("📍", MATCHA_1);
             header.add(icon, BorderLayout.WEST);
             header.add(titles, BorderLayout.CENTER);
 
             PremiumCard card = new PremiumCard(MATCHA_2, MATCHA_1);
             card.setLayout(new BorderLayout());
-            card.setPreferredSize(new Dimension(620, 430));
+            card.setPreferredSize(new Dimension(700, 430));
             card.add(header, BorderLayout.NORTH);
             card.add(formPanel, BorderLayout.CENTER);
             card.add(actions, BorderLayout.SOUTH);
@@ -134,7 +132,7 @@ public class EndParkingFrame extends JFrame {
             add(card, new GridBagConstraints());
         }
 
-        private void handleEndParking() {
+        private void handleViewDetails() {
             String vehicleNumber = vehicleNumberField.getText().trim();
             String phone = phoneField.getText().trim();
 
@@ -148,107 +146,32 @@ public class EndParkingFrame extends JFrame {
             Object[] session = sessionController.getActiveSessionByVehicleAndPhone(vehicleNumber, phone);
 
             if (session == null) {
-            	StyledMessageDialog.showMessage(
-            	        this,
-            	        "No active parking session found for this vehicle and phone.",
-            	        "Warning"
-            	);
+                StyledMessageDialog.showMessage(
+                        this,
+                        "No active parking session found for this vehicle and phone.",
+                        "Warning"
+                );
                 return;
             }
 
             int sessionId = (Integer) session[0];
             int lotId = (Integer) session[1];
+            String storedVehicleNumber = (String) session[2];
             int clientId = (Integer) session[3];
             Timestamp startTime = (Timestamp) session[4];
-            Timestamp endTime = new Timestamp(System.currentTimeMillis());
-
-            double totalHours = paymentController.calculateHours(startTime, endTime);
-
-            Object[] priceList = paymentController.getCurrentPriceListForLot(lotId);
-
-            if (priceList == null) {
-                StyledMessageDialog.showMessage(
-                        this,
-                        "No price list found for this parking lot.",
-                        "Error"
-                );
-                return;
-            }
-
-            double firstHourPrice = (Double) priceList[1];
-            double additionalHourPrice = (Double) priceList[2];
-            double fullDayPrice = (Double) priceList[3];
-
-            PaymentController.PaymentResult result =
-                    paymentController.calculateFinalPaymentWithClubBenefits(
-                            clientId,
-                            lotId,
-                            startTime,
-                            totalHours,
-                            firstHourPrice,
-                            additionalHourPrice,
-                            fullDayPrice
-                    );
-
-            Integer paymentId = paymentController.createPayment(result.getFinalAmount());
-
-            if (paymentId == null) {
-                StyledMessageDialog.showMessage(
-                        this,
-                        "Failed to create payment.",
-                        "Error"
-                );
-                return;
-            }
-
-            boolean completed = sessionController.completeSession(
-                    sessionId,
-                    totalHours,
-                    result.getFinalAmount(),
-                    paymentId,
-                    result.getDiscountAmount(),
-                    result.isFreeByClubRule()
-            );
-
-            if (!completed) {
-            	StyledMessageDialog.showMessage(
-            	        this,
-            	        "Failed to complete parking session.",
-            	        "Error"
-            	);
-                return;
-            }
-
-            String extraInfo;
-            if (result.isFreeByClubRule()) {
-                extraInfo = "🎉 First session is FREE (Club Benefit)\n";
-            } else if (result.getDiscountAmount() > 0) {
-                extraInfo = "💚 Club Discount: ₪ " + String.format("%.2f", result.getDiscountAmount()) + "\n";
-            } else {
-                extraInfo = "";
-            }
+            String storedPhone = (String) session[5];
 
             StyledMessageDialog.showMessage(
                     this,
-                    "✅ Payment approved\n\n" +
-                    "🚧 Barrier opened\n\n" +
-                    "📄 Receipt:\n\n" +
-                    "Vehicle: " + vehicleNumber + "\n" +
-                    "Lot ID: " + lotId + "\n" +
-                    "Hours: " + totalHours + "\n\n" +
-                    "Base: ₪ " + String.format("%.2f", result.getBaseAmount()) + "\n" +
-                    extraInfo +
-                    "Final: ₪ " + String.format("%.2f", result.getFinalAmount()),
-                    "Receipt"
+                    "📄 Active Parking Details\n\n" +
+                    "Session ID: " + sessionId + "\n" +
+                    "Vehicle Number: " + storedVehicleNumber + "\n" +
+                    "Parking Lot ID: " + lotId + "\n" +
+                    "Client ID: " + clientId + "\n" +
+                    "Start Time: " + startTime + "\n" +
+                    "Phone: " + storedPhone,
+                    "Parking Details"
             );
-
-            clearFields();
-        }
-
-        private void clearFields() {
-            vehicleNumberField.setText("");
-            phoneField.setText("");
-            messageLabel.setText(" ");
         }
 
         private void styleRoundedField(JTextField f) {
@@ -472,6 +395,6 @@ public class EndParkingFrame extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new EndParkingFrame().setVisible(true));
+        SwingUtilities.invokeLater(() -> new ViewParkingDetailsFrame().setVisible(true));
     }
 }

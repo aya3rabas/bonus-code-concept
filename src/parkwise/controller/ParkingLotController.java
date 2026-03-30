@@ -8,7 +8,8 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.sql.Date;
-
+import java.nio.file.Files;
+import java.nio.file.Paths;
 public class ParkingLotController {
 
     public List<Object[]> getAllParkingLots() {
@@ -279,6 +280,45 @@ public class ParkingLotController {
 
         } catch (Exception ex) {
             ex.printStackTrace();
+            return false;
+        }
+    }
+    public boolean importPriceListsFromJson(String filePath) {
+        try {
+            String content = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(filePath)));
+
+            // extract updateDate
+            String updateDate = content.split("\"updateDate\"\\s*:\\s*\"")[1].split("\"")[0];
+
+            String[] items = content.split("\\{\\s*\"priceFirstHour\"");
+
+            String sql = "INSERT INTO PriceList (lotId, effectiveDate, firstHourPrice, additionalHourPrice, fullDayPrice) VALUES (?, ?, ?, ?, ?)";
+
+            try (Connection conn = DBConnection.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(sql)) {
+
+                for (int i = 1; i < items.length; i++) {
+                    String part = items[i];
+
+                    double first = Double.parseDouble(part.split(":")[1].split(",")[0].trim());
+                    double additional = Double.parseDouble(part.split("priceAdditionalHour\"\\s*:\\s*")[1].split(",")[0].trim());
+                    double full = Double.parseDouble(part.split("priceFullDay\"\\s*:\\s*")[1].split("}")[0].trim());
+
+                    ps.setInt(1, 0);
+                    ps.setDate(2, java.sql.Date.valueOf(updateDate));
+                    ps.setDouble(3, first);
+                    ps.setDouble(4, additional);
+                    ps.setDouble(5, full);
+
+                    ps.addBatch();
+                }
+
+                ps.executeBatch();
+                return true;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
             return false;
         }
     }

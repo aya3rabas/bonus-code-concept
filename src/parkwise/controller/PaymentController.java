@@ -124,6 +124,7 @@ public class PaymentController {
     public PaymentResult calculateFinalPaymentWithClubBenefits(
             int clientId,
             int lotId,
+            Timestamp sessionStartTime,
             double totalHours,
             double firstHourPrice,
             double additionalHourPrice,
@@ -135,7 +136,7 @@ public class PaymentController {
             return new PaymentResult(baseAmount, baseAmount, 0, false);
         }
 
-        if (isEligibleForFreeSession(clientId, lotId)) {
+        if (isEligibleForFreeSession(clientId, lotId, sessionStartTime)) {
             return new PaymentResult(baseAmount, 0, baseAmount, true);
         }
 
@@ -298,29 +299,31 @@ public class PaymentController {
         return false;
     }
 
-    private boolean isEligibleForFreeSession(int clientId, int lotId) {
+    private boolean isEligibleForFreeSession(int clientId, int lotId, Timestamp sessionStartTime) {
         Integer memberId = getMemberIdByClientId(clientId);
         if (memberId == null) {
             return false;
         }
 
         Timestamp joinDate = getJoinDate(clientId);
-        if (joinDate == null) {
+        if (joinDate == null || sessionStartTime == null) {
             return false;
         }
 
         LocalDateTime join = joinDate.toLocalDateTime();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime sessionStart = sessionStartTime.toLocalDateTime();
 
-        // الجلسة المجانية فقط في نفس شهر/سنة الانضمام
-        if (join.getMonthValue() != now.getMonthValue() || join.getYear() != now.getYear()) {
+        // لازم الجلسة تكون في نفس شهر وسنة الانضمام
+        if (join.getMonthValue() != sessionStart.getMonthValue() ||
+            join.getYear() != sessionStart.getYear()) {
             return false;
         }
 
+        // لازم تكون في موقف مفضل
         if (!isPreferredLot(memberId, lotId)) {
             return false;
         }
 
+        // ولازم ما يكون استخدم جلسة مجانية قبل
         return !alreadyUsedFreeSessionInJoinMonth(clientId, joinDate);
-    }
-}
+    }}

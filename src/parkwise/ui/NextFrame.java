@@ -9,7 +9,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import parkwise.db.DBConnection;
-import parkwise.ui.JoinClubFrame;
+
 public class NextFrame extends JFrame {
 
     public NextFrame() {
@@ -19,10 +19,8 @@ public class NextFrame extends JFrame {
         setContentPane(new ChoosePanel());
     }
 
-    // ===================== Choose Panel =====================
     static class ChoosePanel extends JPanel {
 
-        // Palette
         private final Color OFF_WHITE = new Color(249, 248, 244);
         private final Color MATCHA_1 = new Color(123, 171, 106);
         private final Color MATCHA_2 = new Color(92, 146, 82);
@@ -35,11 +33,21 @@ public class NextFrame extends JFrame {
             setBackground(OFF_WHITE);
             setLayout(new GridBagLayout());
 
-            adminCard = new ChoiceCard("Admin", "Manage parking lots, prices,\nreports and system settings", "🛠",
-                    MATCHA_2, MATCHA_1);
+            adminCard = new ChoiceCard(
+                    "Admin",
+                    "Manage parking lots, prices,\nreports and system settings",
+                    "🛠",
+                    MATCHA_2,
+                    MATCHA_1
+            );
 
-            clientCard = new ChoiceCard("Client", "Register / Login, start/end parking,\npayments and subscriptions",
-                    "🚗", MATCHA_2, MATCHA_1);
+            clientCard = new ChoiceCard(
+                    "Client",
+                    "Register / Login, start/end parking,\npayments and subscriptions",
+                    "🚗",
+                    MATCHA_2,
+                    MATCHA_1
+            );
 
             adminCard.setOnClick(this::showAdminLogin);
             clientCard.setOnClick(this::showClientRegister);
@@ -91,7 +99,7 @@ public class NextFrame extends JFrame {
                 JPanel center = new JPanel(new GridBagLayout());
                 center.setOpaque(false);
 
-                JPanel menuPanel = new JPanel(new GridLayout(2, 2, 25, 25));
+                JPanel menuPanel = new JPanel(new GridLayout(3, 2, 25, 25));
                 menuPanel.setOpaque(false);
                 menuPanel.setBorder(BorderFactory.createEmptyBorder(20, 40, 40, 40));
 
@@ -100,17 +108,20 @@ public class NextFrame extends JFrame {
                         "Manage Parking Lot\n(including spaces and conveyors)");
                 JButton btnAnnualReport = createAdminMenuButton("Generate Annual Summary Report");
                 JButton btnClubGrowthReport = createAdminMenuButton("Generate Customer Club Growth Report");
+                JButton btnImportJson = createAdminMenuButton("Import Price Lists (JSON)");
 
                 btnAdaptPriceList.addActionListener(e -> new AdaptPriceListFrame().setVisible(true));
-
                 btnManageParkingLot.addActionListener(e -> new ParkingLotEditorFrame().setVisible(true));
                 btnAnnualReport.addActionListener(e -> new AnnualSummaryReportFrame().setVisible(true));
                 btnClubGrowthReport.addActionListener(e -> new CustomerClubGrowthReportFrame().setVisible(true));
+                btnImportJson.addActionListener(e -> new ImportPriceListFrame().setVisible(true));
 
                 menuPanel.add(btnAdaptPriceList);
                 menuPanel.add(btnManageParkingLot);
                 menuPanel.add(btnAnnualReport);
                 menuPanel.add(btnClubGrowthReport);
+                menuPanel.add(btnImportJson);
+                menuPanel.add(new JLabel()); // empty placeholder for balanced layout
 
                 center.add(menuPanel);
                 p.add(center, BorderLayout.CENTER);
@@ -120,6 +131,7 @@ public class NextFrame extends JFrame {
 
                 SwingUtilities.getWindowAncestor(this).dispose();
             }
+        
         }
 
         private void showClientRegister() {
@@ -144,9 +156,9 @@ public class NextFrame extends JFrame {
                 title.setBorder(BorderFactory.createEmptyBorder(26, 20, 14, 20));
                 centerCard.add(title, BorderLayout.NORTH);
 
-                JPanel menuPanel = new JPanel(new GridLayout(1, 3, 28, 0));
+                JPanel menuPanel = new JPanel(new GridLayout(2, 2, 28, 28));
                 menuPanel.setOpaque(false);
-                menuPanel.setBorder(BorderFactory.createEmptyBorder(10, 28, 28, 28));
+                menuPanel.setBorder(BorderFactory.createEmptyBorder(20, 40, 40, 40));
 
                 ChoiceCard startParkingCard = new ChoiceCard(
                         "Start Parking",
@@ -164,6 +176,14 @@ public class NextFrame extends JFrame {
                         MATCHA_1
                 );
 
+                ChoiceCard viewDetailsCard = new ChoiceCard(
+                        "View Parking Details",
+                        "View your current active parking\nsession details",
+                        "📍",
+                        MATCHA_2,
+                        MATCHA_1
+                );
+
                 ChoiceCard joinClubCard = new ChoiceCard(
                         "Join Club",
                         "Register to the customer club\nand manage preferred lots",
@@ -174,15 +194,17 @@ public class NextFrame extends JFrame {
 
                 startParkingCard.setOnClick(() -> new StartParkingFrame().setVisible(true));
                 endParkingCard.setOnClick(() -> new EndParkingFrame().setVisible(true));
+                viewDetailsCard.setOnClick(() -> new ViewParkingDetailsFrame().setVisible(true));
                 joinClubCard.setOnClick(() -> new JoinClubFrame().setVisible(true));
 
                 menuPanel.add(startParkingCard);
                 menuPanel.add(endParkingCard);
+                menuPanel.add(viewDetailsCard);
                 menuPanel.add(joinClubCard);
 
                 centerCard.add(menuPanel, BorderLayout.CENTER);
 
-                BigGlassCard wrapper = new BigGlassCard(centerCard, new Dimension(1320, 560));
+                BigGlassCard wrapper = new BigGlassCard(centerCard, new Dimension(1320, 720));
                 root.add(wrapper, new GridBagConstraints());
 
                 clientFrame.setContentPane(root);
@@ -201,8 +223,10 @@ public class NextFrame extends JFrame {
             btn.setFocusPainted(false);
             btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             btn.setPreferredSize(new Dimension(320, 140));
-            btn.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(MATCHA_1, 2, true),
-                    BorderFactory.createEmptyBorder(20, 20, 20, 20)));
+            btn.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(MATCHA_1, 2, true),
+                    BorderFactory.createEmptyBorder(20, 20, 20, 20)
+            ));
             return btn;
         }
 
@@ -233,7 +257,6 @@ public class NextFrame extends JFrame {
             }
         }
 
-        // ===================== Big Center Glass Card Wrapper =====================
         static class BigGlassCard extends JComponent {
             private final JComponent content;
             private final Dimension pref;
@@ -284,7 +307,6 @@ public class NextFrame extends JFrame {
             }
         }
 
-        // ===================== Choice Card =====================
         static class ChoiceCard extends JComponent {
             private final String title;
             private final String desc;
@@ -339,21 +361,25 @@ public class NextFrame extends JFrame {
                     int w = getWidth();
                     int h = getHeight();
 
+                    int cardW = w - 16;
+                    int cardH = h - 16;
+
                     g2.setComposite(AlphaComposite.SrcOver.derive(hover ? 0.16f : 0.12f));
                     g2.setColor(Color.BLACK);
-                    g2.fill(new RoundRectangle2D.Double(8, hover ? 10 : 12, w - 16, h - 16, 24, 24));
+                    g2.fill(new RoundRectangle2D.Double(8, hover ? 10 : 12, cardW, cardH, 24, 24));
 
                     g2.setComposite(AlphaComposite.SrcOver);
                     g2.setColor(Color.WHITE);
-                    g2.fill(new RoundRectangle2D.Double(0, 0, w - 16, h - 16, 24, 24));
+                    g2.fill(new RoundRectangle2D.Double(0, 0, cardW, cardH, 24, 24));
 
                     g2.setComposite(AlphaComposite.SrcOver.derive(0.35f));
                     g2.setColor(new Color(140, 160, 140));
-                    g2.draw(new RoundRectangle2D.Double(0, 0, w - 16, h - 16, 24, 24));
+                    g2.draw(new RoundRectangle2D.Double(0, 0, cardW, cardH, 24, 24));
 
                     int bubble = 58;
                     int bx = 30;
                     int by = 28;
+
                     g2.setComposite(AlphaComposite.SrcOver.derive(hover ? 0.18f : 0.14f));
                     g2.setColor(matcha1);
                     g2.fill(new Ellipse2D.Double(bx, by, bubble, bubble));
@@ -365,20 +391,22 @@ public class NextFrame extends JFrame {
                     int iy = by + (bubble + fim.getAscent()) / 2 - 4;
                     g2.drawString(icon, ix, iy);
 
-                    g2.setFont(new Font("Segoe UI", Font.BOLD, 30));
+                    int startY = by + bubble + 38;
+
+                    g2.setFont(new Font("Segoe UI", Font.BOLD, 28));
                     g2.setColor(new Color(28, 28, 28));
-                    g2.drawString(title, 30, 128);
+                    g2.drawString(title, 30, startY);
 
                     g2.setFont(new Font("Segoe UI", Font.PLAIN, 16));
                     g2.setColor(new Color(90, 90, 90));
-                    drawMultiline(g2, desc, 30, 160, 20);
+                    int descY = startY + 32;
+                    drawMultiline(g2, desc, 30, descY, 20);
 
                     int pillW = 170;
                     int pillH = 44;
-                    int px = 30;
-                    int py = (h - 16) - pillH - 26;
+                    int px = cardW - pillW - 30;   // right side
+                    int py = cardH - pillH - 26;   // bottom
 
-                    g2.setComposite(AlphaComposite.SrcOver);
                     g2.setColor(hover ? matcha2 : Color.WHITE);
                     g2.fillRoundRect(px, py, pillW, pillH, 22, 22);
 
@@ -399,6 +427,7 @@ public class NextFrame extends JFrame {
                 }
             }
 
+
             private void drawMultiline(Graphics2D g2, String text, int x, int y, int lineH) {
                 String[] lines = text.split("\n");
                 int yy = y;
@@ -410,11 +439,10 @@ public class NextFrame extends JFrame {
 
             @Override
             public Dimension getPreferredSize() {
-                return new Dimension(420, 310);
+                return new Dimension(420, 260);
             }
         }
 
-        // ===================== Admin Login Dialog =====================
         static class AdminLoginDialog extends JDialog {
             private boolean success = false;
 
@@ -636,7 +664,6 @@ public class NextFrame extends JFrame {
             }
         }
 
-        // ===================== Client Register Dialog =====================
         static class ClientRegisterDialog extends JDialog {
             private boolean success = false;
 
@@ -826,7 +853,6 @@ public class NextFrame extends JFrame {
             }
 
             private boolean registerClient(String firstName, String lastName, String phone) {
-
                 String existsSql = "SELECT COUNT(*) FROM Client WHERE mobilePhone = ?";
                 String insertSql = "INSERT INTO Client (firstName, lastName, mobilePhone) VALUES (?, ?, ?)";
 
@@ -869,7 +895,6 @@ public class NextFrame extends JFrame {
             }
         }
 
-        // ========= Shared rounded fields =========
         static class RoundedTextField extends JTextField {
             private final int ARC = 18;
             private final Color stroke = new Color(160, 175, 160);
@@ -952,7 +977,6 @@ public class NextFrame extends JFrame {
             }
         }
 
-        // ========= Shared UI components =========
         static class PremiumCard extends JComponent {
             private final Color matcha1;
 

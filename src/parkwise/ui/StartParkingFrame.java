@@ -10,6 +10,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.RoundRectangle2D;
+import java.io.File;
 
 public class StartParkingFrame extends JFrame {
 
@@ -146,7 +147,6 @@ public class StartParkingFrame extends JFrame {
             header.add(titles, BorderLayout.CENTER);
 
             PremiumCard card = new PremiumCard(MATCHA_2, MATCHA_1);
-           
             card.setLayout(new BorderLayout());
             card.setPreferredSize(new Dimension(620, 500));
             card.add(header, BorderLayout.NORTH);
@@ -181,10 +181,12 @@ public class StartParkingFrame extends JFrame {
             }
 
             if (sessionController.hasActiveSession(vehicleNumber)) {
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(
+                        this,
                         "This vehicle already has an active parking session.",
                         "Start Parking",
-                        JOptionPane.WARNING_MESSAGE);
+                        JOptionPane.WARNING_MESSAGE
+                );
                 return;
             }
 
@@ -195,36 +197,44 @@ public class StartParkingFrame extends JFrame {
                 Object[] client = clientController.getClientByPhone(phone);
 
                 if (client == null) {
-                    JOptionPane.showMessageDialog(this,
+                    JOptionPane.showMessageDialog(
+                            this,
                             "Phone number not found for this existing vehicle.",
                             "Start Parking",
-                            JOptionPane.WARNING_MESSAGE);
+                            JOptionPane.WARNING_MESSAGE
+                    );
                     return;
                 }
 
                 int clientIdFromPhone = (Integer) client[0];
 
                 if (clientIdFromVehicle != clientIdFromPhone) {
-                    JOptionPane.showMessageDialog(this,
+                    JOptionPane.showMessageDialog(
+                            this,
                             "This phone number does not match the vehicle owner.",
                             "Start Parking",
-                            JOptionPane.WARNING_MESSAGE);
+                            JOptionPane.WARNING_MESSAGE
+                    );
                     return;
                 }
 
                 boolean success = sessionController.startSession(vehicleNumber, lotId, clientIdFromPhone, phone);
 
                 if (success) {
-                    JOptionPane.showMessageDialog(this,
+                    JOptionPane.showMessageDialog(
+                            this,
                             "Parking session started successfully.\nBarrier opened.\nSMS sent.",
                             "Start Parking",
-                            JOptionPane.INFORMATION_MESSAGE);
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
                     clearFields();
                 } else {
-                    JOptionPane.showMessageDialog(this,
+                    JOptionPane.showMessageDialog(
+                            this,
                             "Failed to start parking session.",
                             "Start Parking",
-                            JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.ERROR_MESSAGE
+                    );
                 }
 
                 return;
@@ -313,7 +323,7 @@ public class StartParkingFrame extends JFrame {
             if (sessionStarted) {
                 StyledMessageDialog.showMessage(
                         SwingUtilities.getWindowAncestor(this),
-                        "New client and vehicle added successfully.\nParking session started.\nBarrier opened.\nSMS sent.",
+                        "New client and vehicle added successfully.\n3 vehicle photos uploaded.\nParking session started.\nBarrier opened.\nSMS sent.",
                         "Start Parking",
                         MATCHA_2,
                         MATCHA_1,
@@ -558,6 +568,7 @@ public class StartParkingFrame extends JFrame {
             }
         }
     }
+
     static class VehicleDetailsDialog extends JDialog {
         private boolean confirmed = false;
 
@@ -573,6 +584,14 @@ public class StartParkingFrame extends JFrame {
 
         private final RoundedTextField weightField = new RoundedTextField();
 
+        private String frontPhotoPath;
+        private String rearPhotoPath;
+        private String sidePhotoPath;
+
+        private final JLabel frontLabel = new JLabel("No file selected");
+        private final JLabel rearLabel = new JLabel("No file selected");
+        private final JLabel sideLabel = new JLabel("No file selected");
+
         private final JLabel errorLabel = new JLabel(" ");
 
         VehicleDetailsDialog(Window owner, Color matcha2, Color matcha1, Color offWhite) {
@@ -584,7 +603,7 @@ public class StartParkingFrame extends JFrame {
 
             PremiumCard card = new PremiumCard(matcha2, matcha1);
             card.setLayout(new BorderLayout());
-            card.setPreferredSize(new Dimension(620, 720));
+            card.setPreferredSize(new Dimension(620, 760));
 
             JPanel northContainer = new JPanel();
             northContainer.setOpaque(false);
@@ -613,7 +632,7 @@ public class StartParkingFrame extends JFrame {
             title.setFont(new Font("Segoe UI", Font.BOLD, 26));
             title.setForeground(new Color(28, 28, 28));
 
-            JLabel subtitle = new JLabel("Fill the client and vehicle details");
+            JLabel subtitle = new JLabel("Fill the client and vehicle details and upload 3 photos");
             subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 14));
             subtitle.setForeground(new Color(90, 90, 90));
 
@@ -644,15 +663,17 @@ public class StartParkingFrame extends JFrame {
             gbc.insets = new Insets(8, 0, 6, 0);
             gbc.fill = GridBagConstraints.HORIZONTAL;
             gbc.weightx = 1;
-            
-            gbc.gridx = 0;
-            gbc.gridy = 0;
+
             addField(form, gbc, "First name", firstNameField);
             addField(form, gbc, "Last name", lastNameField);
             addField(form, gbc, "Vehicle type", typeField);
             addComboField(form, gbc, "Color", colorCombo);
             addComboField(form, gbc, "Size", sizeCombo);
             addField(form, gbc, "Weight (kg)", weightField);
+
+            addPhotoField(form, gbc, "Front Photo", frontLabel, path -> frontPhotoPath = path);
+            addPhotoField(form, gbc, "Rear Photo", rearLabel, path -> rearPhotoPath = path);
+            addPhotoField(form, gbc, "Side Photo", sideLabel, path -> sidePhotoPath = path);
 
             errorLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
             errorLabel.setForeground(new Color(180, 60, 60));
@@ -692,11 +713,8 @@ public class StartParkingFrame extends JFrame {
                     () -> setShape(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), 26, 26))
             );
         }
-      
 
         private void addField(JPanel panel, GridBagConstraints gbc, String labelText, JComponent field) {
-
-            // label
             gbc.gridx = 0;
             gbc.fill = GridBagConstraints.NONE;
             gbc.weightx = 0;
@@ -706,7 +724,6 @@ public class StartParkingFrame extends JFrame {
             label.setForeground(new Color(60, 60, 60));
             panel.add(label, gbc);
 
-            // field
             gbc.gridy++;
             gbc.fill = GridBagConstraints.HORIZONTAL;
             gbc.weightx = 1;
@@ -714,13 +731,10 @@ public class StartParkingFrame extends JFrame {
             styleComponent(field);
             panel.add(field, gbc);
 
-            // move to next row
             gbc.gridy++;
         }
 
         private void addComboField(JPanel panel, GridBagConstraints gbc, String labelText, JComboBox<String> combo) {
-
-            // label
             gbc.gridx = 0;
             gbc.fill = GridBagConstraints.NONE;
             gbc.weightx = 0;
@@ -730,7 +744,6 @@ public class StartParkingFrame extends JFrame {
             label.setForeground(new Color(60, 60, 60));
             panel.add(label, gbc);
 
-            // combo
             gbc.gridy++;
             gbc.fill = GridBagConstraints.HORIZONTAL;
             gbc.weightx = 1;
@@ -740,6 +753,53 @@ public class StartParkingFrame extends JFrame {
 
             gbc.gridy++;
         }
+
+        private void addPhotoField(JPanel panel, GridBagConstraints gbc,
+                                   String labelText, JLabel fileLabel,
+                                   java.util.function.Consumer<String> setter) {
+
+            gbc.gridx = 0;
+            gbc.fill = GridBagConstraints.NONE;
+            gbc.weightx = 0;
+
+            JLabel label = new JLabel(labelText);
+            label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            label.setForeground(new Color(60, 60, 60));
+            panel.add(label, gbc);
+
+            gbc.gridy++;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            gbc.weightx = 1;
+
+            JPanel row = new JPanel(new BorderLayout(10, 0));
+            row.setOpaque(false);
+
+            JButton uploadBtn = new JButton("Upload");
+            uploadBtn.setFocusPainted(false);
+
+            uploadBtn.addActionListener(e -> {
+                JFileChooser chooser = new JFileChooser();
+                int res = chooser.showOpenDialog(this);
+
+                if (res == JFileChooser.APPROVE_OPTION) {
+                    File selectedFile = chooser.getSelectedFile();
+                    String path = selectedFile.getAbsolutePath();
+                    setter.accept(path);
+                    fileLabel.setText("✔ " + selectedFile.getName());
+                }
+            });
+
+            fileLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            fileLabel.setForeground(new Color(100, 100, 100));
+
+            row.add(uploadBtn, BorderLayout.WEST);
+            row.add(fileLabel, BorderLayout.CENTER);
+
+            panel.add(row, gbc);
+
+            gbc.gridy++;
+        }
+
         private void styleComponent(JComponent comp) {
             comp.setFont(new Font("Segoe UI", Font.PLAIN, 15));
             comp.setForeground(new Color(28, 28, 28));
@@ -751,16 +811,6 @@ public class StartParkingFrame extends JFrame {
             ));
 
             comp.setPreferredSize(new Dimension(420, 46));
-        }
-
-        private void styleRoundedField(JTextField f) {
-            f.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-            f.setForeground(new Color(28, 28, 28));
-            f.setBackground(Color.WHITE);
-            f.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(160, 175, 160), 1, true),
-                    BorderFactory.createEmptyBorder(12, 14, 12, 14)
-            ));
         }
 
         private void styleRoundedCombo(JComboBox<String> combo) {
@@ -805,8 +855,12 @@ public class StartParkingFrame extends JFrame {
             if (getFirstName().isEmpty()
                     || getLastName().isEmpty()
                     || getTypeText().isEmpty()
-                    || weightField.getText().trim().isEmpty()) {
-                errorLabel.setText("Please fill all fields.");
+                    || weightField.getText().trim().isEmpty()
+                    || frontPhotoPath == null
+                    || rearPhotoPath == null
+                    || sidePhotoPath == null) {
+
+                errorLabel.setText("Please fill all fields and upload 3 photos.");
                 return;
             }
 
@@ -852,7 +906,20 @@ public class StartParkingFrame extends JFrame {
         double getWeightKg() {
             return Double.parseDouble(weightField.getText().trim());
         }
+
+        String getFrontPhotoPath() {
+            return frontPhotoPath;
+        }
+
+        String getRearPhotoPath() {
+            return rearPhotoPath;
+        }
+
+        String getSidePhotoPath() {
+            return sidePhotoPath;
+        }
     }
+
     static class RoundedComboBoxUI extends javax.swing.plaf.basic.BasicComboBoxUI {
         private final Color accent;
 
@@ -874,9 +941,9 @@ public class StartParkingFrame extends JFrame {
 
         @Override
         public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {
-            // no default blue background
         }
     }
+
     static class StyledMessageDialog extends JDialog {
 
         StyledMessageDialog(Window owner, String message, String titleText, Color matcha2, Color matcha1, Color offWhite) {

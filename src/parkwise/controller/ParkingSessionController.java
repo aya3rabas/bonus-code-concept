@@ -8,80 +8,84 @@ import java.sql.ResultSet;
 
 public class ParkingSessionController {
 
-    public boolean startSession(String vehicleNumber, int lotId, int clientId, String phone) {
+	public boolean startSession(String vehicleNumber, int lotId, int clientId, String phone) {
 
-        if (hasActiveSession(vehicleNumber)) {
-            return false;
-        }
+	    String normalizedVehicle = vehicleNumber == null ? "" : vehicleNumber.trim().toUpperCase();
+	    String normalizedPhone = phone == null ? "" : phone.replaceAll("\\s+", "").trim();
 
-        String checkSpacesSql = "SELECT availableSpaces FROM ParkingLot WHERE lotId = ?";
-        String insertSessionSql = "INSERT INTO ParkingSession " +
-                "(lotId, vehicleNumber, clientId, startTime, endTime, totalHours, finalAmount, " +
-                "isFreeByClubRule, discountAmount, clientPhoneAtEntry, paymentId, currentConveyorId) " +
-                "VALUES (?, ?, ?, Now(), NULL, 0, 0, false, 0, ?, NULL, NULL)";
-        String decreaseSpacesSql = "UPDATE ParkingLot SET availableSpaces = availableSpaces - 1 " +
-                "WHERE lotId = ? AND availableSpaces > 0";
+	    if (hasActiveSession(normalizedVehicle)) {
+	        return false;
+	    }
 
-        try (Connection conn = DBConnection.getConnection()) {
-            conn.setAutoCommit(false);
+	    String checkSpacesSql = "SELECT availableSpaces FROM ParkingLot WHERE lotId = ?";
+	    String insertSessionSql = "INSERT INTO ParkingSession " +
+	            "(lotId, vehicleNumber, clientId, startTime, endTime, totalHours, finalAmount, " +
+	            "isFreeByClubRule, discountAmount, clientPhoneAtEntry, paymentId, currentConveyorId) " +
+	            "VALUES (?, ?, ?, Now(), NULL, 0, 0, false, 0, ?, NULL, NULL)";
+	    String decreaseSpacesSql = "UPDATE ParkingLot SET availableSpaces = availableSpaces - 1 " +
+	            "WHERE lotId = ? AND availableSpaces > 0";
 
-            try {
-                int availableSpaces = 0;
+	    try (Connection conn = DBConnection.getConnection()) {
+	        conn.setAutoCommit(false);
 
-                try (PreparedStatement ps = conn.prepareStatement(checkSpacesSql)) {
-                    ps.setInt(1, lotId);
+	        try {
+	            int availableSpaces = 0;
 
-                    try (ResultSet rs = ps.executeQuery()) {
-                        if (rs.next()) {
-                            availableSpaces = rs.getInt("availableSpaces");
-                        } else {
-                            conn.rollback();
-                            return false;
-                        }
-                    }
-                }
+	            try (PreparedStatement ps = conn.prepareStatement(checkSpacesSql)) {
+	                ps.setInt(1, lotId);
 
-                if (availableSpaces <= 0) {
-                    conn.rollback();
-                    return false;
-                }
+	                try (ResultSet rs = ps.executeQuery()) {
+	                    if (rs.next()) {
+	                        availableSpaces = rs.getInt("availableSpaces");
+	                    } else {
+	                        conn.rollback();
+	                        return false;
+	                    }
+	                }
+	            }
 
-                try (PreparedStatement ps = conn.prepareStatement(insertSessionSql)) {
-                    ps.setInt(1, lotId);
-                    ps.setString(2, vehicleNumber);
-                    ps.setInt(3, clientId);
-                    ps.setString(4, phone);
+	            if (availableSpaces <= 0) {
+	                conn.rollback();
+	                return false;
+	            }
 
-                    if (ps.executeUpdate() <= 0) {
-                        conn.rollback();
-                        return false;
-                    }
-                }
+	            try (PreparedStatement ps = conn.prepareStatement(insertSessionSql)) {
+	                ps.setInt(1, lotId);
+	                ps.setString(2, normalizedVehicle);
+	                ps.setInt(3, clientId);
+	                ps.setString(4, normalizedPhone);
 
-                try (PreparedStatement ps = conn.prepareStatement(decreaseSpacesSql)) {
-                    ps.setInt(1, lotId);
+	                if (ps.executeUpdate() <= 0) {
+	                    conn.rollback();
+	                    return false;
+	                }
+	            }
 
-                    if (ps.executeUpdate() <= 0) {
-                        conn.rollback();
-                        return false;
-                    }
-                }
+	            try (PreparedStatement ps = conn.prepareStatement(decreaseSpacesSql)) {
+	                ps.setInt(1, lotId);
 
-                conn.commit();
-                return true;
+	                if (ps.executeUpdate() <= 0) {
+	                    conn.rollback();
+	                    return false;
+	                }
+	            }
 
-            } catch (Exception e) {
-                conn.rollback();
-                e.printStackTrace();
-                return false;
-            } finally {
-                conn.setAutoCommit(true);
-            }
+	            conn.commit();
+	            return true;
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+	        } catch (Exception e) {
+	            conn.rollback();
+	            e.printStackTrace();
+	            return false;
+	        } finally {
+	            conn.setAutoCommit(true);
+	        }
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        return false;
+	    }
+	
     }
 
     public Object[] getActiveSession(String vehicleNumber) {
@@ -145,12 +149,14 @@ public class ParkingSessionController {
     }
 
     public boolean hasActiveSession(String vehicleNumber) {
-        String sql = "SELECT COUNT(*) FROM ParkingSession WHERE vehicleNumber = ? AND endTime IS NULL";
+        String normalizedVehicle = vehicleNumber == null ? "" : vehicleNumber.trim().toUpperCase();
+
+        String sql = "SELECT COUNT(*) FROM ParkingSession WHERE UCASE(TRIM(vehicleNumber)) = ? AND endTime IS NULL";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, vehicleNumber);
+            ps.setString(1, normalizedVehicle);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -166,15 +172,21 @@ public class ParkingSessionController {
     }
 
     public Object[] getActiveSessionByVehicleAndPhone(String vehicleNumber, String phone) {
+        String normalizedVehicle = vehicleNumber == null ? "" : vehicleNumber.trim().toUpperCase();
+        String normalizedPhone = phone == null ? "" : phone.replaceAll("\\s+", "").trim();
+
         String sql = "SELECT * FROM ParkingSession " +
-                "WHERE vehicleNumber = ? AND clientPhoneAtEntry = ? AND endTime IS NULL";
+                "WHERE UCASE(TRIM(vehicleNumber)) = ? " +
+                "AND TRIM(clientPhoneAtEntry) = ? " +
+                "AND endTime IS NULL";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, vehicleNumber);
-            ps.setString(2, phone);
-
+            ps.setString(1, normalizedVehicle);
+            ps.setString(2, normalizedPhone);
+            System.out.println("Searching session with vehicle = [" + normalizedVehicle + "]");
+            System.out.println("Searching session with phone = [" + normalizedPhone + "]");
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return new Object[]{

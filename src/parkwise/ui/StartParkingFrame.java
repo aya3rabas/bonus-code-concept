@@ -223,10 +223,22 @@ public class StartParkingFrame extends JFrame {
                 if (success) {
                     JOptionPane.showMessageDialog(
                             this,
-                            "Parking session started successfully.\nBarrier opened.\nSMS sent.",
+                            "Parking session started successfully.\nBarrier opened.",
                             "Start Parking",
                             JOptionPane.INFORMATION_MESSAGE
                     );
+
+                    StyledMessageDialog.showMessage(
+                            SwingUtilities.getWindowAncestor(this),
+                            "📱 SMS sent to " + phone + "\n\n" +
+                            "Your vehicle (" + vehicleNumber + ") has been parked successfully.\n" +
+                            "You can retrieve it anytime using your phone number.",
+                            "SMS Notification",
+                            MATCHA_2,
+                            MATCHA_1,
+                            OFF_WHITE
+                    );
+
                     clearFields();
                 } else {
                     JOptionPane.showMessageDialog(
@@ -242,7 +254,6 @@ public class StartParkingFrame extends JFrame {
 
             handleNewVehicleAndClient(vehicleNumber, phone, lotId);
         }
-
         private void handleNewVehicleAndClient(String vehicleNumber, String phone, int lotId) {
             VehicleDetailsDialog dialog = new VehicleDetailsDialog(
                     SwingUtilities.getWindowAncestor(this),
@@ -323,12 +334,27 @@ public class StartParkingFrame extends JFrame {
             if (sessionStarted) {
                 StyledMessageDialog.showMessage(
                         SwingUtilities.getWindowAncestor(this),
-                        "New client and vehicle added successfully.\n3 vehicle photos uploaded.\nParking session started.\nBarrier opened.\nSMS sent.",
+                        "New client and vehicle added successfully.\n" +
+                        "3 vehicle photos uploaded.\n" +
+                        "Parking session started.\n" +
+                        "Barrier opened.",
                         "Start Parking",
                         MATCHA_2,
                         MATCHA_1,
                         OFF_WHITE
                 );
+
+                StyledMessageDialog.showMessage(
+                        SwingUtilities.getWindowAncestor(this),
+                        "📱 SMS sent to " + phone + "\n\n" +
+                        "Your vehicle (" + vehicleNumber + ") has been parked successfully.\n" +
+                        "Location and parking details are available.",
+                        "SMS Notification",
+                        MATCHA_2,
+                        MATCHA_1,
+                        OFF_WHITE
+                );
+
                 clearFields();
             } else {
                 StyledMessageDialog.showMessage(
@@ -341,7 +367,6 @@ public class StartParkingFrame extends JFrame {
                 );
             }
         }
-
         private void clearFields() {
             vehicleNumberField.setText("");
             phoneField.setText("");

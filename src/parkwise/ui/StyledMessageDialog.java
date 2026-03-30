@@ -24,7 +24,7 @@ public class StyledMessageDialog extends JDialog {
 
         PremiumCard card = new PremiumCard(MATCHA_2, MATCHA_1);
         card.setLayout(new BorderLayout());
-        card.setPreferredSize(new Dimension(540, 320));
+        card.setPreferredSize(new Dimension(620, 460));
 
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
@@ -57,6 +57,14 @@ public class StyledMessageDialog extends JDialog {
         textArea.setWrapStyleWord(true);
         textArea.setBorder(BorderFactory.createEmptyBorder(10, 22, 10, 22));
 
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setBorder(null);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(14);
+
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
         actions.setOpaque(false);
         actions.setBorder(BorderFactory.createEmptyBorder(8, 22, 20, 22));
@@ -66,7 +74,7 @@ public class StyledMessageDialog extends JDialog {
         actions.add(okButton);
 
         card.add(header, BorderLayout.NORTH);
-        card.add(textArea, BorderLayout.CENTER);
+        card.add(scrollPane, BorderLayout.CENTER);
         card.add(actions, BorderLayout.SOUTH);
 
         JPanel outer = new JPanel(new GridBagLayout());
@@ -91,6 +99,7 @@ public class StyledMessageDialog extends JDialog {
         if (t.contains("duplicate")) return "📌";
         if (t.contains("success")) return "✅";
         if (t.contains("receipt")) return "🧾";
+        if (t.contains("sms")) return "📱";
         return "ℹ";
     }
 
@@ -103,6 +112,7 @@ public class StyledMessageDialog extends JDialog {
         if (t.contains("duplicate")) return "This record already exists";
         if (t.contains("success")) return "Operation completed successfully";
         if (t.contains("receipt")) return "Parking session summary";
+        if (t.contains("sms")) return "Client notification";
         return "System message";
     }
 

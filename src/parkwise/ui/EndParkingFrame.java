@@ -137,7 +137,8 @@ public class EndParkingFrame extends JFrame {
         private void handleEndParking() {
             String vehicleNumber = vehicleNumberField.getText().trim();
             String phone = phoneField.getText().trim();
-
+            System.out.println("vehicleNumber entered = [" + vehicleNumber + "]");
+            System.out.println("phone entered = [" + phone + "]");
             messageLabel.setText(" ");
 
             if (vehicleNumber.isEmpty() || phone.isEmpty()) {
@@ -175,9 +176,9 @@ public class EndParkingFrame extends JFrame {
                 return;
             }
 
-            double firstHourPrice = (Double) priceList[1];
-            double additionalHourPrice = (Double) priceList[2];
-            double fullDayPrice = (Double) priceList[3];
+            double firstHourPrice = (Double) priceList[2];
+            double additionalHourPrice = (Double) priceList[3];
+            double fullDayPrice = (Double) priceList[4];
 
             PaymentController.PaymentResult result =
                     paymentController.calculateFinalPaymentWithClubBenefits(
@@ -242,7 +243,11 @@ public class EndParkingFrame extends JFrame {
                     "Receipt"
             );
 
-            clearFields();
+            Window window = SwingUtilities.getWindowAncestor(this);
+            if (window != null) {
+                window.dispose();
+            }
+            return;
         }
 
         private void clearFields() {

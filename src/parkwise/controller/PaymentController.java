@@ -61,20 +61,41 @@ public class PaymentController {
         return Math.ceil(hours);
     }
 
+    // أولًا price list للموقف نفسه، وإذا ما لقى → fallback على lotId = 0
     public Object[] getCurrentPriceListForLot(int lotId) {
-        String sql =
-                "SELECT TOP 1 priceListId, firstHourPrice, additionalHourPrice, fullDayPrice " +
-                "FROM PriceList WHERE lotId = ? ORDER BY effectiveDate DESC";
+        String lotSql =
+                "SELECT TOP 1 priceListId, effectiveDate, firstHourPrice, additionalHourPrice, fullDayPrice " +
+                "FROM PriceList WHERE lotId = ? ORDER BY effectiveDate DESC, priceListId DESC";
 
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        String fallbackSql =
+                "SELECT TOP 1 priceListId, effectiveDate, firstHourPrice, additionalHourPrice, fullDayPrice " +
+                "FROM PriceList WHERE lotId = 0 ORDER BY effectiveDate DESC, priceListId DESC";
 
-            ps.setInt(1, lotId);
+        try (Connection conn = DBConnection.getConnection()) {
 
-            try (ResultSet rs = ps.executeQuery()) {
+            try (PreparedStatement ps = conn.prepareStatement(lotSql)) {
+                ps.setInt(1, lotId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return new Object[]{
+                                rs.getInt("priceListId"),
+                                rs.getDate("effectiveDate"),
+                                rs.getDouble("firstHourPrice"),
+                                rs.getDouble("additionalHourPrice"),
+                                rs.getDouble("fullDayPrice")
+                        };
+                    }
+                }
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(fallbackSql);
+                 ResultSet rs = ps.executeQuery()) {
+
                 if (rs.next()) {
                     return new Object[]{
                             rs.getInt("priceListId"),
+                            rs.getDate("effectiveDate"),
                             rs.getDouble("firstHourPrice"),
                             rs.getDouble("additionalHourPrice"),
                             rs.getDouble("fullDayPrice")
@@ -89,8 +110,10 @@ public class PaymentController {
         return null;
     }
 
-    public double calculateAmount(double totalHours, double firstHourPrice,
-                                  double additionalHourPrice, double fullDayPrice) {
+    public double calculateAmount(double totalHours,
+                                  double firstHourPrice,
+                                  double additionalHourPrice,
+                                  double fullDayPrice) {
 
         if (totalHours <= 1) {
             return firstHourPrice;
@@ -313,17 +336,15 @@ public class PaymentController {
         LocalDateTime join = joinDate.toLocalDateTime();
         LocalDateTime sessionStart = sessionStartTime.toLocalDateTime();
 
-        // لازم الجلسة تكون في نفس شهر وسنة الانضمام
         if (join.getMonthValue() != sessionStart.getMonthValue() ||
             join.getYear() != sessionStart.getYear()) {
             return false;
         }
 
-        // لازم تكون في موقف مفضل
         if (!isPreferredLot(memberId, lotId)) {
             return false;
         }
 
-        // ولازم ما يكون استخدم جلسة مجانية قبل
         return !alreadyUsedFreeSessionInJoinMonth(clientId, joinDate);
-    }}
+    }
+}
